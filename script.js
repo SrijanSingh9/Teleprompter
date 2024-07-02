@@ -1,5 +1,5 @@
-let interval;
-let speed = 5;
+let animationFrame;
+let speed = 10;
 let position = 0;
 let isAtEnd = false;
 
@@ -12,29 +12,33 @@ function startTeleprompter() {
     document.getElementById('script').style.display = 'none';
     position = outputDiv.scrollTop;
 
-    // Clear any existing interval to prevent multiple intervals running simultaneously
-    clearInterval(interval);
-
     // If the teleprompter is at the end of the script, reset to the top
     if (isAtEnd) {
         position = 0;
         isAtEnd = false;
     }
 
-    interval = setInterval(() => {
-        if (outputDiv.scrollTop + outputDiv.clientHeight >= outputDiv.scrollHeight) {
-            clearInterval(interval);
-            isAtEnd = true;
-        } else {
-            position += speed;
-            outputDiv.scrollTop = position;
-        }
-    }, 100);
+    // Start the smooth scrolling animation
+    smoothScroll();
+}
+
+// Smooth scrolling function
+function smoothScroll() {
+    const outputDiv = document.getElementById('output');
+
+    if (outputDiv.scrollTop + outputDiv.clientHeight >= outputDiv.scrollHeight) {
+        isAtEnd = true;
+        cancelAnimationFrame(animationFrame);
+    } else {
+        position += speed / 60; // Adjust speed to achieve smoother scrolling
+        outputDiv.scrollTop = position;
+        animationFrame = requestAnimationFrame(smoothScroll);
+    }
 }
 
 // Stop the teleprompter
 function stopTeleprompter() {
-    clearInterval(interval);
+    cancelAnimationFrame(animationFrame);
     const outputDiv = document.getElementById('output');
     // Save the current scroll position
     position = outputDiv.scrollTop;
@@ -42,7 +46,7 @@ function stopTeleprompter() {
 
 // Adjust the speed of scrolling
 function adjustSpeed() {
-    speed = parseInt(document.getElementById('speed').value, 10);
+    speed = parseInt(document.getElementById('speed').value, 10)*10;
 }
 
 // Toggle full-screen mode
