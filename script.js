@@ -10,6 +10,7 @@ function startTeleprompter() {
     outputDiv.innerText = scriptText;
     outputDiv.style.display = 'block';
     document.getElementById('script').style.display = 'none';
+    position = outputDiv.scrollTop;
 
     // Clear any existing interval to prevent multiple intervals running simultaneously
     clearInterval(interval);
