@@ -8,23 +8,33 @@
 </head>
 <body>
     <div class="container">
+        
         <div class="teleprompter">
             <textarea id="script" placeholder="Enter your script here..."></textarea>
             <div id="output" class="output"></div>
         </div>
         <div class="controls">
-            <button id="start" onclick="startTeleprompter()">Start</button>
-            <button id="stop" onclick="stopTeleprompter()">Stop</button>
-            <button id="fullscreen" onclick="toggleFullscreen()">Fullscreen</button>
-        </div>
-        <div>
+            <button onclick="startTeleprompter()">Start</button>
+            <button onclick="stopTeleprompter()">Stop</button>
+            <button onclick="toggleFullscreen()">Toggle Fullscreen</button>
+            <div>
             <label for="speed">Speed:</label>
-            <input type="range" id="speed" min="1" max="10" value="5" onchange="adjustSpeed()">
+            <input type="range" id="speed" min="-30" max="30" value="5" oninput="adjustSpeed()">
+            </div>
+            <div>
+            <label for="fontsize">Font Size:</label>
+            <input type="range" id="fontsize" min="10" max="48" value="24" oninput="adjustFontSize()">
+            </div>
+            <br>
+            <label for="wordwrap">Word Wrap:</label>
+            <input type="checkbox" id="wordwrap" checked onchange="toggleWordWrap()">
+            <div>
+            <input type="file" id="fileInput" accept=".txt" onchange="importText()">
+            </div>
         </div>
     </div>
     <footer>
-        This is only for demonstrative purposes, inspired by <a href="https://qprompt.app/">QPrompt</a>, an open-source teleprompter app.<br>
-        This demonstration is made by <a href="https://www.linkedin.com/in/srijan-singh-559258255/">Srijan Singh </a>
+        This is only for demonstrative purposes, inspired by <a href="https://qprompt.app/">QPrompt</a>, an open-source teleprompter app. <br>  &copy; Demonstration by  <a href="https://www.linkedin.com/in/srijan-singh-559258255/">Srijan Singh.</a>
     </footer>
     <script src="script.js"></script>
 </body>
