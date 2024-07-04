@@ -1,6 +1,7 @@
 body {
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
@@ -27,7 +28,6 @@ body {
     margin-bottom: 20px;
     background: black;
     position: relative;
-    margin-top: 20px; /* Add top margin to space it from the top */
 }
 
 #script {
@@ -55,6 +55,7 @@ body {
     left: 0;
     overflow-y: auto;
     display: none;
+    white-space: pre-wrap;
 }
 
 .controls {
@@ -71,13 +72,13 @@ button {
     margin-bottom: 10px;
 }
 
-input[type="range"] {
+input[type="range"], input[type="file"], input[type="checkbox"] {
     margin-left: 10px;
     margin-bottom: 10px;
 }
 
 footer {
-    margin-top: auto;
+    margin-top: 20px;
     font-size: 14px;
     text-align: center;
 }
