@@ -3,39 +3,571 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teleprompter</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Professional Teleprompter</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --accent-color: #0a84ff;
+            --accent-hover: #0066cc;
+            --danger-color: #ff453a;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden; /* Prevent body scroll */
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            max-width: 1000px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* --- Prompter Screen Area --- */
+        .prompter-wrapper {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            background: #000;
+            border-radius: 12px;
+            border: 1px solid #333;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+
+        /* Fullscreen styles for the wrapper */
+        .prompter-wrapper:fullscreen {
+            border: none;
+            border-radius: 0;
+            max-width: 100%;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #script-editor {
+            width: 100%;
+            height: 100%;
+            font-size: 24px;
+            line-height: 1.6;
+            padding: 30px;
+            box-sizing: border-box;
+            background: #000;
+            color: var(--text-color);
+            border: none;
+            resize: none;
+            outline: none;
+        }
+
+        #prompter-display {
+            width: 100%;
+            height: 100%;
+            font-size: 48px;
+            line-height: 1.5;
+            padding: 50vh 10% 50vh 10%; /* Start at bottom, end at top */
+            box-sizing: border-box;
+            color: var(--text-color);
+            background: #000;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow-y: hidden; /* Hide scrollbar during playback */
+            display: none;
+            white-space: pre-wrap;
+            cursor: pointer; /* Indicate it can be clicked to pause */
+        }
+
+        .mirrored {
+            transform: scaleX(-1);
+        }
+
+        /* The Eyeline Indicator */
+        .eyeline {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 60px;
+            transform: translateY(-50%);
+            background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+            border-left: 4px solid var(--accent-color);
+            border-right: 4px solid var(--accent-color);
+            pointer-events: none; /* Let clicks pass through to text */
+            display: none;
+            z-index: 10;
+        }
+
+        /* Floating On-Screen Controls for Fullscreen/Present Mode */
+        .floating-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 30, 30, 0.85);
+            border: 1px solid #444;
+            padding: 10px 20px;
+            border-radius: 50px;
+            display: none; /* Flex when presenting */
+            align-items: center;
+            gap: 20px;
+            z-index: 30;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .prompter-wrapper:hover .floating-controls {
+            opacity: 1;
+        }
+
+        .floating-controls button {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        .floating-controls button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .floating-controls .speed-label {
+            font-size: 16px;
+            font-weight: 600;
+            min-width: 80px;
+            text-align: center;
+            color: #fff;
+            user-select: none;
+        }
+
+        /* --- Controls Area --- */
+        .controls-panel {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #333;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: #333;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #444;
+        }
+
+        button.primary {
+            background-color: var(--accent-color);
+        }
+
+        button.primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button.danger {
+            background-color: var(--danger-color);
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #aaa;
+        }
+
+        input[type="range"] {
+            cursor: pointer;
+            accent-color: var(--accent-color);
+        }
+
+        input[type="file"] {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        input[type="file"]::file-selector-button {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        /* Hide bottom controls when wrapper is fullscreen */
+        .prompter-wrapper:fullscreen ~ .controls-panel,
+        .prompter-wrapper:fullscreen ~ footer {
+            display: none;
+        }
+
+        footer {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        footer a { color: var(--accent-color); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* Status Overlay (Play/Pause indicator) */
+        .status-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #fff;
+            display: none;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+    </style>
 </head>
 <body>
-    <div class="container">
+
+    <div class="app-container">
         
-        <div class="teleprompter">
-            <textarea id="script" placeholder="Enter your script here..."></textarea>
-            <div id="output" class="output"></div>
+        <div class="prompter-wrapper" id="prompter-wrapper">
+            <div class="eyeline" id="eyeline"></div>
+            <div class="status-overlay" id="status-overlay">Paused</div>
+            
+            <!-- Floating Fullscreen Controls -->
+            <div class="floating-controls" id="floating-controls">
+                <button onclick="changeSpeed(-1, event)" title="Decrease Speed">−</button>
+                <span class="speed-label" id="speed-label">Speed: 15</span>
+                <button onclick="changeSpeed(1, event)" title="Increase Speed">+</button>
+            </div>
+            
+            <textarea id="script-editor" placeholder="Type or paste your script here..."></textarea>
+            <div id="prompter-display"></div>
         </div>
-        <div class="controls">
-            <button onclick="startTeleprompter()">Start</button>
-            <button onclick="stopTeleprompter()">Stop</button>
-            <button onclick="toggleFullscreen()">Toggle Fullscreen</button>
-            <div>
-            <label for="speed">Speed:</label>
-            <input type="range" id="speed" min="-30" max="30" value="5" oninput="adjustSpeed()">
+
+        <div class="controls-panel">
+            <div class="control-group">
+                <button id="btn-play" class="primary" onclick="togglePlay()">▶ Play / Pause</button>
+                <button id="btn-edit" onclick="enterEditMode()">✎ Edit Script</button>
+                <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
             </div>
-            <div>
-            <label for="fontsize">Font Size:</label>
-            <input type="range" id="fontsize" min="10" max="48" value="24" oninput="adjustFontSize()">
+
+            <div class="control-group">
+                <label for="speed">Speed:</label>
+                <input type="range" id="speed" min="1" max="50" value="15" oninput="updateSettings()">
+                
+                <label for="fontsize">Size:</label>
+                <input type="range" id="fontsize" min="20" max="100" value="48" oninput="updateSettings()">
             </div>
-            <br>
-            <label for="wordwrap">Word Wrap:</label>
-            <input type="checkbox" id="wordwrap" checked onchange="toggleWordWrap()">
-            <div>
-            <input type="file" id="fileInput" accept=".txt" onchange="importText()">
+
+            <div class="control-group">
+                <label>
+                    <input type="checkbox" id="mirror-toggle" onchange="toggleMirror()"> Mirror Text
+                </label>
+            </div>
+
+            <div class="control-group">
+                <input type="file" id="fileInput" accept=".txt" onchange="importText()">
             </div>
         </div>
+
+        <footer>
+            Press <strong>Spacebar</strong> to Play/Pause • Tap the screen in Present mode to Pause.<br>
+            Use <strong>Up/Down Arrows</strong> to change speed • <strong>Left/Right Arrows</strong> to change size.<br>
+            Demonstrative purpose, inspired by <a href="https://qprompt.app/" target="_blank">QPrompt</a>. &copy; <a href="https://www.linkedin.com/in/srijan-singh-559258255/" target="_blank">Srijan Singh</a>.
+        </footer>
     </div>
-    <footer>
-        This is only for demonstrative purposes, inspired by <a href="https://qprompt.app/">QPrompt</a>, an open-source teleprompter app. <br>  &copy; Demonstration by  <a href="https://www.linkedin.com/in/srijan-singh-559258255/">Srijan Singh.</a>
-    </footer>
-    <script src="script.js"></script>
+
+    <script>
+        // DOM Elements
+        const editor = document.getElementById('script-editor');
+        const display = document.getElementById('prompter-display');
+        const wrapper = document.getElementById('prompter-wrapper');
+        const eyeline = document.getElementById('eyeline');
+        const statusOverlay = document.getElementById('status-overlay');
+        const floatingControls = document.getElementById('floating-controls');
+        const speedLabel = document.getElementById('speed-label');
+        const speedInput = document.getElementById('speed');
+        const sizeInput = document.getElementById('fontsize');
+        const mirrorToggle = document.getElementById('mirror-toggle');
+
+        // State variables
+        let animationFrame;
+        let isPlaying = false;
+        let isPresenting = false; 
+        let scrollPosition = 0;
+        let scrollSpeed = 1.5;
+        let statusTimeout;
+
+        // Initialize Settings
+        function updateSettings() {
+            // Map speed 1-50 to a usable pixel increment (e.g., 0.1 to 5)
+            scrollSpeed = parseInt(speedInput.value, 10) / 10;
+            
+            // Update font size
+            const fontSize = sizeInput.value + 'px';
+            display.style.fontSize = fontSize;
+            
+            // Update floating UI label
+            speedLabel.innerText = `Speed: ${speedInput.value}`;
+        }
+
+        // Change speed dynamically (from shortcuts or overlay)
+        function changeSpeed(delta, event) {
+            if (event) event.stopPropagation(); // Prevent clicking from pausing the prompter
+            
+            let currentVal = parseInt(speedInput.value, 10);
+            let newVal = Math.max(1, Math.min(50, currentVal + delta)); // Constrain between 1 and 50
+            
+            speedInput.value = newVal;
+            updateSettings();
+            
+            showStatus(`Speed: ${newVal}`, "rgba(0,0,0,0.8)", 1000);
+        }
+
+        // Change font size dynamically (from shortcuts)
+        function changeFontSize(delta, event) {
+            if (event) event.stopPropagation(); 
+            
+            let currentVal = parseInt(sizeInput.value, 10);
+            let newVal = Math.max(20, Math.min(100, currentVal + delta)); // Constrain between 20 and 100
+            
+            sizeInput.value = newVal;
+            updateSettings();
+            
+            showStatus(`Size: ${newVal}px`, "rgba(0,0,0,0.8)", 1000);
+        }
+
+        // Universal function to show status messages
+        function showStatus(text, color = "rgba(0,0,0,0.6)", duration = 1500) {
+            statusOverlay.innerText = text;
+            statusOverlay.style.background = color;
+            statusOverlay.style.display = "block";
+            
+            clearTimeout(statusTimeout);
+            
+            if (duration > 0) {
+                statusTimeout = setTimeout(() => {
+                    if (isPlaying) statusOverlay.style.display = "none";
+                }, duration);
+            }
+        }
+
+        // Toggle Play / Pause
+        function togglePlay() {
+            if (!isPresenting) {
+                startPresentation();
+            } else {
+                if (isPlaying) {
+                    pausePrompter();
+                } else {
+                    resumePrompter();
+                }
+            }
+        }
+
+        // Start the presentation mode (hide editor, show display)
+        function startPresentation() {
+            const text = editor.value.trim();
+            if (!text) {
+                alert("Please enter a script first.");
+                return;
+            }
+
+            display.innerText = text;
+            
+            editor.style.display = 'none';
+            display.style.display = 'block';
+            eyeline.style.display = 'block';
+            floatingControls.style.display = 'flex'; // Show hover controls
+            
+            isPresenting = true;
+            scrollPosition = 0;
+            display.scrollTop = 0;
+
+            resumePrompter();
+        }
+
+        // Return to edit mode
+        function enterEditMode() {
+            pausePrompter();
+            isPresenting = false;
+            
+            display.style.display = 'none';
+            eyeline.style.display = 'none';
+            statusOverlay.style.display = 'none';
+            floatingControls.style.display = 'none';
+            editor.style.display = 'block';
+            
+            // Exit fullscreen if active
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+        }
+
+        function resumePrompter() {
+            isPlaying = true;
+            showStatus("Playing", "rgba(40, 167, 69, 0.8)", 1500);
+
+            lastTime = performance.now();
+            animationFrame = requestAnimationFrame(scrollLoop);
+        }
+
+        function pausePrompter() {
+            isPlaying = false;
+            cancelAnimationFrame(animationFrame);
+            showStatus("Paused", "rgba(220, 53, 69, 0.8)", 0); // 0 = don't auto-hide
+        }
+
+        // The main scrolling loop
+        let lastTime = 0;
+        function scrollLoop(time) {
+            if (!isPlaying) return;
+
+            // Calculate delta time for consistent speed regardless of refresh rate
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            // Move position
+            scrollPosition += scrollSpeed * (deltaTime / 16.67); // Normalized to 60fps
+            display.scrollTop = scrollPosition;
+
+            // Check if reached the bottom
+            if (display.scrollTop + display.clientHeight >= display.scrollHeight - 5) {
+                pausePrompter();
+                showStatus("End of Script", "rgba(0,0,0,0.8)", 0);
+                return;
+            }
+
+            animationFrame = requestAnimationFrame(scrollLoop);
+        }
+
+        // Toggle Fullscreen on the wrapper (keeps eyeline visible)
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                wrapper.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Mirror text for physical teleprompter glass
+        function toggleMirror() {
+            if (mirrorToggle.checked) {
+                display.classList.add('mirrored');
+            } else {
+                display.classList.remove('mirrored');
+            }
+        }
+
+        // Import a Text File
+        function importText() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                editor.value = e.target.result;
+                enterEditMode(); // Reset to edit mode when new file loaded
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Event Listeners ---
+
+        // Click on the prompter text to play/pause
+        display.addEventListener('click', () => {
+            if (isPresenting) togglePlay();
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            // Prevent shortcuts from triggering if we are typing in the editor
+            if (e.target.tagName.toLowerCase() === 'textarea') return;
+
+            if (e.code === 'Space') {
+                e.preventDefault(); // Prevent page scroll
+                if (isPresenting) togglePlay();
+            }
+            
+            // Speed Controls via Arrow Keys
+            if (e.code === 'ArrowUp') {
+                e.preventDefault();
+                if (isPresenting) changeSpeed(1);
+            }
+            
+            if (e.code === 'ArrowDown') {
+                e.preventDefault();
+                if (isPresenting) changeSpeed(-1);
+            }
+
+            // Font Size Controls via Left/Right Arrow Keys
+            if (e.code === 'ArrowRight') {
+                e.preventDefault();
+                if (isPresenting) changeFontSize(2); // Increase by 2px
+            }
+            
+            if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                if (isPresenting) changeFontSize(-2); // Decrease by 2px
+            }
+            
+            if (e.code === 'Escape' && isPresenting && !document.fullscreenElement) {
+                enterEditMode();
+            }
+        });
+
+        // Setup initial sizes
+        updateSettings();
+
+    </script>
 </body>
 </html>
