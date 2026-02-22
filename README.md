@@ -18,9 +18,7 @@ This project is a simple web-based teleprompter created for demonstrative purpos
 
 ## Project Files
 
-- `index.html`: The main HTML file containing the structure of the teleprompter.
-- `styles.css`: The CSS file for styling the teleprompter and making it responsive.
-- `script.js`: The JavaScript file containing the functionality for the teleprompter.
+- `index.html`: The main HTML file containing the structure of the teleprompter with styling as well as js script.
 
 
 ## Acknowledgements
